@@ -1,10 +1,35 @@
 
 
-import enum
-from platform import node
+def getGCosts(nodes):
+    startNode = getStartNode(nodes)
+
+    hueristicValues = []
+    for rowIdx, row in enumerate(nodes):
+        rowValues = []
+        for colIdx, _ in enumerate(row):
+            rowDiff = abs(rowIdx - startNode[0])
+            colDiff = abs(colIdx - startNode[1])
+            rowValues.append(rowDiff + colDiff)
+        hueristicValues.append(rowValues)
+    return hueristicValues
 
 
-def getHueristicValues(nodes):
+def getFCosts(nodes):
+    HCosts = getHCosts(nodes)
+    GCosts = getGCosts(nodes)
+    FCosts = []
+
+    for rowIdx, row in enumerate(nodes):
+        FCostRow = []
+        for colIdx, _ in enumerate(row):
+            HCost = HCosts[rowIdx][colIdx]
+            GCost = GCosts[rowIdx][colIdx]
+            FCostRow.append(HCost + GCost)
+        FCosts.append(FCostRow)
+    return FCosts
+
+
+def getHCosts(nodes):
     endNode = getEndNode(nodes)
 
     hueristicValues = []
@@ -32,31 +57,23 @@ def getEndNode(nodes):
                 return [rowIdx, colIdx]
 
 
-def popLowestHeuisticValueNode(queue, hueristicValues):
-    minHueisticValue = float('inf')
-    minHeuristicValueIdx = -1
+def removeMinCostNodes(queue, costs):
+    minCost = float('inf')
     for idx, node in enumerate(queue):
-        hueristicValue = hueristicValues[node[0]][node[1]]
-        if hueristicValue < minHueisticValue:
-            minHeuristicValueIdx = idx
-            minHueisticValue = hueristicValue
+        cost = costs[node[0]][node[1]]
+        if cost < minCost:
+            minCost = cost
 
-    return queue.pop(minHeuristicValueIdx)
+    minCosts = []
+    queueMinCostsRemoved = []
+    for idx, node in enumerate(queue):
+        cost = costs[node[0]][node[1]]
+        if cost == minCost:
+            minCosts.append(node)
+        else:
+            queueMinCostsRemoved.append(node)
 
-
-def getDefaultVisited(nodes):
-    rows = len(nodes)
-    cols = len(nodes[0])
-
-    visited = []
-
-    for _ in range(rows):
-        row = []
-        for _ in range(cols):
-            row.append(False)
-        visited.append(row)
-
-    return visited
+    return queueMinCostsRemoved, minCosts
 
 
 def getNeighbors(row, col, nodes, visited):
@@ -73,28 +90,58 @@ def getNeighbors(row, col, nodes, visited):
     return neighbors
 
 
-def greedyBFS(nodes):
-    visited = getDefaultVisited(nodes)
+def copyNodes(nodes):
+    newNodes = []
+    for _, row in enumerate(nodes):
+        newRow = []
+        for _, col in enumerate(row):
+            newRow.append(col)
+        newNodes.append(newRow)
+    return newNodes
+
+
+def findPathBFS(nodes, costs):
+    visited = [[False for col in row] for row in nodes]
     startNode = getStartNode(nodes)
-    hueristicValues = getHueristicValues(nodes)
     queue = [startNode]
     path = []
 
+    pathTracker = copyNodes(nodes)
+
+    step = 0
+
     while queue:
-        currNode = popLowestHeuisticValueNode(queue, hueristicValues)
-        path.append(currNode)
-        row, col = currNode
+        queue, minCostNodes = removeMinCostNodes(queue, costs)
+        for node in minCostNodes:
+            path.append(node)
+            row, col = node
 
-        if nodes[row][col] == END:
-            break
+            if nodes[row][col] == END:
+                return pathTracker
 
-        visited[row][col] = True
-        neighbors = getNeighbors(row, col, nodes, visited)
+            if step != 0:
+                pathTracker[row][col] = step
 
-        for neighbor in neighbors:
-            queue.append(neighbor)
+            visited[row][col] = True
+            neighbors = getNeighbors(row, col, nodes, visited)
 
-    return path
+            for neighbor in neighbors:
+                queue.append(neighbor)
+
+        step += 1
+
+    return pathTracker
+
+
+def mergeNodes(node1, node2):
+    mergedNodes = []
+    for rowIdx, row in enumerate(node1):
+        mergedRow = node1[rowIdx]
+        mergedRow.append("\t")
+        mergedRow += node2[rowIdx]
+        mergedNodes.append(mergedRow)
+
+    return mergedNodes
 
 
 def prettyPrintNodes(nodes):
@@ -104,45 +151,60 @@ def prettyPrintNodes(nodes):
             if type(node) != int:
                 continue
             if node < 10:
-                node = f"  {node}"
+                node = f"{node}  "
             elif node >= 10:
-                node = f" {node}"
+                node = f"{node} "
             nodes[rowIdx][colIdx] = node
-
-    print("==== LEGEND ====")
-    print(f"Obstacle:\t\t{OBSTACLE}")
-    print(f"Unexplored Path:\t{PATH}")
-    print("================\n")
     for row in nodes:
         print("".join(row))
 
 
+def printLegend():
+    print("========== LEGEND ==========")
+    print(f"Wall:\t\t\t{OBSTACLE}")
+    print(f"Unexplored Path:\t{PATH}")
+    print(f"Start:\t\t\t{START}")
+    print(f"End:\t\t\t{END}")
+    print("============================\n")
+
+
+OBSTACLE = "#  "
+PATH = "~  "
+START = "ST "
+END = "EN "
+
+nodes = [
+    [OBSTACLE, PATH, PATH, PATH, PATH, PATH, PATH, PATH, PATH, START],
+    [OBSTACLE, PATH, OBSTACLE, OBSTACLE, OBSTACLE,
+        OBSTACLE, OBSTACLE, OBSTACLE, OBSTACLE, PATH],
+    [OBSTACLE, PATH, OBSTACLE, PATH, PATH, PATH, PATH, PATH, OBSTACLE, PATH],
+    [OBSTACLE, PATH, OBSTACLE, END, OBSTACLE,
+        OBSTACLE, OBSTACLE, PATH, OBSTACLE, PATH],
+    [OBSTACLE, PATH, PATH, PATH, OBSTACLE, PATH, PATH, PATH, OBSTACLE, PATH],
+    [OBSTACLE, OBSTACLE, OBSTACLE, PATH, OBSTACLE,
+        PATH, OBSTACLE, OBSTACLE, OBSTACLE, PATH],
+    [PATH, PATH, PATH, PATH, OBSTACLE, PATH, PATH, PATH, PATH, PATH],
+]
+
+
 if __name__ == '__main__':
-    OBSTACLE = "  #"
-    PATH = "  ~"
-    START = "  @"
-    END = "   E"
-
-    nodes = [
-        [OBSTACLE, PATH, PATH, PATH, PATH, PATH, PATH, PATH, PATH, START],
-        [OBSTACLE, PATH, OBSTACLE, OBSTACLE, OBSTACLE,
-            OBSTACLE, OBSTACLE, OBSTACLE, OBSTACLE, PATH],
-        [OBSTACLE, PATH, OBSTACLE, PATH, PATH, PATH, PATH, PATH, OBSTACLE, PATH],
-        [OBSTACLE, PATH, OBSTACLE, PATH, OBSTACLE,
-            OBSTACLE, OBSTACLE, PATH, OBSTACLE, PATH],
-        [OBSTACLE, PATH, PATH, PATH, OBSTACLE, PATH, PATH, PATH, OBSTACLE, PATH],
-        [OBSTACLE, OBSTACLE, OBSTACLE, PATH, OBSTACLE,
-            PATH, OBSTACLE, OBSTACLE, OBSTACLE, PATH],
-        [END, PATH, PATH, PATH, OBSTACLE, PATH, PATH, PATH, PATH, PATH],
-    ]
-
-    path = greedyBFS(nodes)
-
-    hueristicValues = getHueristicValues(nodes)
-    nodesWithPath = nodes
-    for idx, node in enumerate(path):
-        nodesWithPath[node[0]][node[1]] = idx
+    HCosts = getHCosts(nodes)
+    GBFSPath = findPathBFS(nodes, costs=HCosts)
+    GBFSPathWithAndHCosts = mergeNodes(GBFSPath, HCosts)
 
     print("\n")
-    prettyPrintNodes(nodesWithPath)
+    printLegend()
+    print("GBFS\t\t\t\tH Cost\n")
+    prettyPrintNodes(GBFSPathWithAndHCosts)
+
+    GCosts = getGCosts(nodes)
+    FCosts = getFCosts(nodes)
+    AStarPath = findPathBFS(nodes, costs=FCosts)
+
+    AStarAndCosts = mergeNodes(AStarPath, HCosts)
+    AStarAndCosts = mergeNodes(AStarAndCosts, GCosts)
+    AStarAndCosts = mergeNodes(AStarAndCosts, FCosts)
+
+    print("\nA Star\t\t\t\tH Cost\t\t\t\tG Cost\t\t\t\tF Cost\n")
+    prettyPrintNodes(AStarAndCosts)
     print("\n")
