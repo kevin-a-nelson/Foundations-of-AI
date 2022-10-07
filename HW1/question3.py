@@ -1,4 +1,9 @@
 
+# QUESTION 3
+#
+# The entire right side of the tree after 5 - 2 ( root.right.right is pruned ) is pruned. Since root.right is a min
+# and root.right.right.left is 5 we can prune root.right.right since we know that root.right.right will not be less
+# than two.
 
 import math
 GET_MAX = -1
@@ -13,6 +18,7 @@ class Tree:
         self.right = None
         self.key = key
 
+    # Display code taken from stack over flow https://stackoverflow.com/questions/34012886/print-binary-tree-level-by-level-in-python
     def display(self):
         lines, *_ = self._display_aux()
         for line in lines:
@@ -66,43 +72,8 @@ class Tree:
             [a + u * ' ' + b for a, b in zipped_lines]
         return lines, n + m + u, max(p, q) + 2, n + u // 2
 
-
-root = Tree(0)  # done
-nodeL = Tree(5)  # done
-nodeR = Tree(0)  # done
-
-root.left = nodeL
-root.right = nodeR
-
-nodeRL = Tree(0)  # done
-nodeRR = Tree(0)  # done
-
-nodeR.left = nodeRL
-nodeR.right = nodeRR
-
-nodeRLL = Tree(1)  # done
-nodeRLR = Tree(0)  # done
-
-nodeRL.left = nodeRLL
-nodeRL.right = nodeRLR
-
-nodeRRL = Tree(5)  # done
-nodeRRR = Tree(0)
-
-nodeRR.left = nodeRRL
-nodeRR.right = nodeRRR
-
-nodeRLRL = Tree(4)  # done
-nodeRLRR = Tree(2)  # done
-
-nodeRLR.left = nodeRLRL
-nodeRLR.right = nodeRLRR
-
-nodeRRRR = Tree(3)  # done
-nodeRRRL = Tree(4)  # done
-
-nodeRRR.right = nodeRRRR
-nodeRRR.left = nodeRRRL
+# if mode equals GET_MAX make it GET_MIN
+# if mode equals GET_MIN make it MIN_MAX
 
 
 def toggleMode(mode):
@@ -118,6 +89,7 @@ def minMax(node, mode=GET_MIN):
     if node.left is None and node.right is None:
         return node.key
 
+    # if there is no left node, get the min max of the right node
     if node.left is None:
         rightNode = minMax(node.right, mode)
 
@@ -129,6 +101,7 @@ def minMax(node, mode=GET_MIN):
         node.key = rightNode
         return rightNode
 
+    # if there is no right node, get the min max of the left node
     if node.right is None:
         leftNode = minMax(node.left, mode)
 
@@ -140,6 +113,7 @@ def minMax(node, mode=GET_MIN):
         node.key = leftNode
         return leftNode
 
+    # if right node and left node exist, get the min or max of the two
     if mode == GET_MAX:
         maxLeft = minMax(node.left, mode)
         maxRight = minMax(node.right, mode)
@@ -167,8 +141,58 @@ After
 """
 
 if __name__ == '__main__':
+
+    # Tree setup
+    root = Tree(0)
+    nodeL = Tree(5)
+    nodeR = Tree(0)
+
+    root.left = nodeL
+    root.right = nodeR
+
+    nodeRL = Tree(0)
+    nodeRR = Tree(0)
+
+    nodeR.left = nodeRL
+    nodeR.right = nodeRR
+
+    nodeRLL = Tree(1)
+    nodeRLR = Tree(0)
+
+    nodeRL.left = nodeRLL
+    nodeRL.right = nodeRLR
+
+    nodeRRL = Tree(5)
+    nodeRRR = Tree(0)
+
+    nodeRR.left = nodeRRL
+    nodeRR.right = nodeRRR
+
+    nodeRLRL = Tree(4)
+    nodeRLRR = Tree(2)
+
+    nodeRLR.left = nodeRLRL
+    nodeRLR.right = nodeRLRR
+
+    nodeRRRR = Tree(3)
+    nodeRRRL = Tree(4)
+
+    nodeRRR.right = nodeRRRR
+    nodeRRR.left = nodeRRRL
+
     print(BEFORE_TITLE)
     root.display()
     minMax(root)
     print(AFTER_TITLE)
     root.display()
+
+    # The entire right side of the tree after 5 - 2 ( root.right.right is pruned ) is pruned. Since root.right is a min
+    # and root.right.right.left is 5 we can prune root.right.right since we know that root.right.right will not be less
+    # than two.
+
+    ANSWER = """
+    The entire right side of the tree after 5 - 2 ( root.right.right is pruned ) is pruned. Since root.right is a min
+    and root.right.right.left is 5 we can prune root.right.right since we know that root.right.right will not be less
+    than two.
+        """
+    print(ANSWER)
